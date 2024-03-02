@@ -25,6 +25,7 @@
 #define SIV_GAME 1
 #define SIV_GAME_OVER 2
 #define SIV_NEXT 4
+#define SIV_STATUS_DEATH 8
 
 #define MAX_MONSTRE 14
 
@@ -90,7 +91,7 @@ SDL_Texture* pSprite = NULL;
 // Paramètres
 int score=0;
 int high_score =0;
-int vie=0;
+int vie=3;
 
 // Definition des mosaiques
 // Pas de mosaique dans cet exemple
@@ -389,22 +390,22 @@ void deplace_enemy() {
         for (int i=0;i<MAX_MONSTRE;i++) {
             m_sirena[i].y+=dif_level;
             if (m_sirena[i].y>= play_y ) { 
-                status= SIV_GAME_OVER;
+                status= SIV_STATUS_DEATH;
                 break; 
             }
             m_sconz[i].y+=dif_level;
             if (m_sconz[i].y>= play_y ) { 
-                status= SIV_GAME_OVER;
+                status= SIV_STATUS_DEATH;
                 break; 
             }
             m_flappy[i].y+=dif_level;
             if (m_flappy[i].y>= play_y ) { 
-                status= SIV_GAME_OVER;
+                status= SIV_STATUS_DEATH;
                 break; 
             }
             m_feliz[i].y+=dif_level;
             if (m_feliz[i].y>= play_y ) { 
-                status= SIV_GAME_OVER;
+                status= SIV_STATUS_DEATH;
                 break; 
             }
         }
@@ -438,7 +439,13 @@ void deplace_enemy() {
                 SDL_RenderCopy(pRenderer, pSprite, &spr_tir_monster[0], &rct);
             } 
             if (m_monst_tir[i].x+46/SCREEN_RATIO >= play_x && m_monst_tir[i].x+46/SCREEN_RATIO <= play_x+75/SCREEN_RATIO && m_monst_tir[i].y>=play_y ) {
-                status = SIV_GAME_OVER;
+//                printf("DEPLACE_ENEMY:IN\n");
+                status = SIV_STATUS_DEATH;
+               // printf("DEPLACE_ENEMY:firing  %p\n", m_monst_tir[i].monster);
+                //m_monst_tir[i].monster->firing = 0;
+ 
+          //      m_monst_tir[i].monster = NULL;
+           //     printf("DEPLACE_ENEMY:OUT\n");
                 break;
             }
 
@@ -538,8 +545,10 @@ void Update_GameOver() {
         score =0;
         SDL_RenderPresent(pRenderer);
         SDL_Delay(2500);
+        initialize_level();
         sfc_loaded = 0;
-        g_cur_level=0;
+        dif_level=1;
+        vie =3;
         status = SIV_GAME;
 
 }
@@ -608,7 +617,6 @@ int is_collided() {
         a=a+_is_monster_collided(&m_flappy[i]);
         a=a+_is_monster_collided(&m_feliz[i]);
     }
-    // missile colides missile
     // missile colides bunker
     // missile colides vessel
     // missile colides alien
@@ -686,21 +694,32 @@ void update_death() {
         // Create Screen
     SDL_Rect rct_scene = {0,0,SIV_WND_WIDTH,SIV_WND_HEIGHT};
     SDL_RenderCopy(pRenderer, pScene, &rct_scene, &rct_scene );
-
+    //SDL_Rect rct;
+    deplace_enemy();
   /*  for (int i=0;i<max_enemy;i++)
        display_enemy(i);*/
 
-    SDL_RenderCopy(pRenderer, pSprite, &spr_player_dead[0], &spr_player_dest);
+// display-empty
+    SDL_RenderCopy(pRenderer, pSprite, &spr_empty[0], &spr_player_dest);
+
+// display - fire one
+    SDL_RenderCopy(pRenderer, pSprite, &spr_expl_enemy[1], &spr_player_dest);
     SDL_RenderPresent(pRenderer);
 
+    SDL_Delay (350);
+// display - fire to
+    SDL_RenderCopy(pRenderer, pSprite, &spr_expl_enemy[2], &spr_player_dest);
+    SDL_RenderPresent(pRenderer);
+
+    SDL_Delay (350);
+    SDL_RenderCopy(pRenderer, pSprite, &spr_empty[0], &spr_player_dest);
     SDL_Delay(2500);
     vie --;
     if (vie>0) {
-        initialize_level();
 
-      //  status = CEP_STATUS_GAME;
-    } //TODO: else 
-        //status = SIV_GAME_OVER;
+        status = SIV_GAME;
+    } else 
+        status = SIV_GAME_OVER;
 
 }
 void update_status() {
@@ -711,9 +730,9 @@ void update_status() {
         case SIV_GAME:
                 Update_Game();
         break;
-/*                case CEP_STATUS_DEATH:
-                    update_death();
-                break;*/
+        case SIV_STATUS_DEATH:
+                update_death();
+        break;
         case SIV_GAME_OVER:
             Update_GameOver();
         break;
